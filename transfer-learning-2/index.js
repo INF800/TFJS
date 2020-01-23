@@ -2,6 +2,17 @@
 // ---------------------------[ Helpers start ]---------------------------------------------
 // ----------------------------------------------------------------------------------------
 
+// Function to make execution wait for given number
+// of milliseconds.
+// wait(ms)
+function wait(ms){
+  var start = new Date().getTime();
+  var end = start;
+  while(end < start + ms) {
+    end = new Date().getTime();
+ }
+}
+
 /**
  * USAGE: `img = capture(i.toString())` where `i` is INT
  * Captures a frame from the webcam and normalizes it between -1 and 1.
@@ -119,6 +130,7 @@ async function addExampleHandler(label, imgId) {
     // Creates a 2-layer fully connected model. By creating a separate model,
     // rather than adding layers to the mobilenet model, we "freeze" the weights
     // of the mobilenet model, and only train weights from the new model.
+    const HiddenDenseUnits = 100
     model = tf.sequential({
       layers: [
         // Flattens the input to a vector so we can use it in a dense layer. While
@@ -128,7 +140,7 @@ async function addExampleHandler(label, imgId) {
             {inputShape: truncatedMobileNet.outputs[0].shape.slice(1)}),
         // Layer 1.
         tf.layers.dense({
-          units: ui.getDenseUnits(),
+          units: HiddenDenseUnits,
           activation: 'relu',
           kernelInitializer: 'varianceScaling',
           useBias: true
@@ -175,12 +187,40 @@ async function addExampleHandler(label, imgId) {
       callbacks: {
         onBatchEnd: async (batch, logs) => {
           //ui.trainStatus('Loss: ' + logs.loss.toFixed(5));
-          console.log(logs.loss.toFixed(5));
+          //console.log(logs.loss.toFixed(5));
         }
       }
     });
+
+    return 0
   }
   
+/**
+ * To predict class based on image tag id
+ * Note:
+ * Input must be 1x224x224x3
+ * `imgID` is of type INT
+ */
+async function predict(imgId){
+  // load image using helper function
+  const imgToPredict = await getImage(imgId);
+
+  // Make a prediction through mobilenet, getting the internal activation of
+  // the mobilenet model, i.e., "embeddings" of the input images.
+  const embeddings = truncatedMobileNet.predict(imgToPredict);
+
+  // Make a prediction through our newly-trained model using the embeddings
+  // from mobilenet as input.
+  const predictions = model.predict(embeddings);
+
+  // Returns the index with the maximum probability. This number corresponds
+  // to the class the model thinks is the most probable given the input.
+  const predictedClass = predictions.as1D().argMax();
+  const classId = (await predictedClass.data())[0];
+  imgToPredict.dispose();
+
+  return classId;
+} 
 
 // ----------------------------------------------------------------------------------------
 // ---------------------------[ Helpers end ]----------------------------------------------
@@ -198,15 +238,15 @@ async function app(){
         // coke can -> 0
         if (i > 0 && i < 11 ){
           // label, id
-          addExampleHandler(0, i.toString())
+          await addExampleHandler(0, i.toString())
         } 
         // pizza -> 1
         else if (i > 10 && i < 21 ) {
-          addExampleHandler(1, i.toString())
+          await addExampleHandler(1, i.toString())
         } 
         // burger -> 2 
         else if (i > 20 && i < 31 ) {
-          addExampleHandler(1, i.toString())
+          await addExampleHandler(1, i.toString())
         } 
         else {
           console.log("Loop incorrect")
@@ -218,11 +258,21 @@ async function app(){
     console.log(controllerDataset.xs == null)
 
     // train
-    //console.log("Training started")
-    //train()
-    // make controllerds global / send it as param into train
-    // chech what `warmup` is all about [X]
+    console.log("Training started");
+    const nil = await train()
+    console.log('traing completed!')
+    // check what `warmup` is all about [X]
 
+    // predict
+    // -------
+    // TODO: Make it wait!
+    // wait(7000); // wait 7 secs
+    // until completely trained. 
+    // const predClass = await predict("9")
+    // console.log(predClass)
+    
+
+    
 }
 
 app();
