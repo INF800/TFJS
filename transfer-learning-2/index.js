@@ -192,7 +192,7 @@ async function app(){
     truncatedMobileNet = await loadTruncatedMobileNet();
     console.log("truncated model loaded.")
     
-    // add data
+    // add data into 
     console.log("adding data...")
     for (let i = 1; i<31; i++){
         // coke can -> 0
@@ -218,12 +218,11 @@ async function app(){
     console.log(controllerDataset.xs == null)
 
     // train
-    console.log("Training started")
-    train()
+    //console.log("Training started")
+    //train()
     // make controllerds global / send it as param into train
     // chech what `warmup` is all about [X]
 
-
-
-
 }
+
+app();
