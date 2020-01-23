@@ -89,28 +89,11 @@ ui.setExampleHandler(async label => {
 
 
 
-/** 
- * Initialize dataset controller here as
- * `addExampleHandler` needs it
-*/
-const NUM_CLASSES = 3
-// create instance for Dataset Controller to
-// add data
-controllerDataset = new ControllerDataset(NUM_CLASSES);
-// adds images to dataset from html tag `ids` and `labels`
-// note: Input size must be 224x224 in tags. 
-async function addExampleHandler(label, imgId) {
-    let img = await getImage(imgId);
-    controllerDataset.addExample(truncatedMobileNet.predict(img), label);
-    img.dispose();
-}
-
-
-
 
 /**
  * Sets up and trains the classifier.
  */
+/*
  async function train() {
     if (controllerDataset.xs == null) {
       throw new Error('Add some examples before training!');
@@ -181,7 +164,7 @@ async function addExampleHandler(label, imgId) {
     });
   }
   
-
+*/
 // ----------------------------------------------------------------------------------------
 // ---------------------------[ Helpers end ]----------------------------------------------
 // ----------------------------------------------------------------------------------------
@@ -193,6 +176,24 @@ async function app(){
     console.log("truncated model loaded.")
     
     // add data
+
+    /** 
+     * Initialize dataset controller here as
+     * `addExampleHandler` needs it
+    */
+    const NUM_CLASSES = 3
+    // create instance for Dataset Controller to
+    // add data
+    controllerDataset = new ControllerDataset(NUM_CLASSES);
+    // adds images to dataset from html tag `ids` and `labels`
+    // note: Input size must be 224x224 in tags. 
+    async function addExampleHandler(label, imgId) {
+        let img = await getImage(imgId);
+        controllerDataset.addExample(truncatedMobileNet.predict(img), label);
+        img.dispose();
+    }
+
+
     console.log("adding data...")
     for (let i = 1; i<31; i++){
         // coke can -> 0
@@ -214,16 +215,164 @@ async function app(){
     }
     console.log("data added!")
 
-    // should be false!
-    console.log(controllerDataset.xs == null)
-
     // train
     console.log("Training started")
-    train()
+    //train()
     // make controllerds global / send it as param into train
     // chech what `warmup` is all about [X]
 
+    console.log(controllerDataset.xs == null)
 
-
+    if (controllerDataset.xs == null) {
+        throw new Error('Add some examples before training!');
+      }
+      
+      // Creates a 2-layer fully connected model. By creating a separate model,
+      // rather than adding layers to the mobilenet model, we "freeze" the weights
+      // of the mobilenet model, and only train weights from the new model.
+      //const HiddenDenseUnits = 100
+      model = tf.sequential({
+        layers: [
+          // Flattens the input to a vector so we can use it in a dense layer. While
+          // technically a layer, this only performs a reshape (and has no training
+          // parameters).
+          tf.layers.flatten(
+              {inputShape: truncatedMobileNet.outputs[0].shape.slice(1)}),
+          // Layer 1.
+          tf.layers.dense({
+            units: 100,
+            activation: 'relu',
+            kernelInitializer: 'varianceScaling',
+            useBias: true
+          }),
+          // Layer 2. The number of units of the last layer should correspond
+          // to the number of classes we want to predict.
+          tf.layers.dense({
+            units: 3,
+            kernelInitializer: 'varianceScaling',
+            useBias: false,
+            activation: 'softmax'
+          })
+        ]
+      });
+      
+      // hyperparams
+      LR = 1e-4
+      BatchSizeFraction = 0.4
+      Epochs = 20
+  
+  
+      // Creates the optimizers which drives training of the model.
+      optimizer = tf.train.adam(LR);
+      // We use categoricalCrossentropy which is the loss function we use for
+      // categorical classification which measures the error between our predicted
+      // probability distribution over classes (probability that an input is of each
+      // class), versus the label (100% probability in the true class)>
+      model.compile({optimizer: optimizer, loss: 'categoricalCrossentropy'});
+    
+      // We parameterize batch size as a fraction of the entire dataset because the
+      // number of examples that are collected depends on how many examples the user
+      // collects. This allows us to have a flexible batch size.
+      batchSize =
+          Math.floor(controllerDataset.xs.shape[0] * BatchSizeFraction);
+      if (!(batchSize > 0)) {
+        throw new Error(
+            `Batch size is 0 or NaN. Please choose a non-zero fraction.`);
+      }
+    
+      // Train the model! Model.fit() will shuffle xs & ys so we don't have to.
+      model.fit(controllerDataset.xs, controllerDataset.ys, {
+        batchSize,
+        epochs: Epochs,
+        callbacks: {
+          onBatchEnd: async (batch, logs) => {
+            //ui.trainStatus('Loss: ' + logs.loss.toFixed(5));
+            console.log(logs.loss.toFixed(5));
+          }
+        }
+      });
 
 }
+
+
+/**
+ * 
+ * Run this in console:
+ * --------------------
+ *     // train
+    console.log("Training started")
+    //train()
+    // make controllerds global / send it as param into train
+    // chech what `warmup` is all about [X]
+
+    console.log(controllerDataset.xs == null)
+
+    if (controllerDataset.xs == null) {
+        throw new Error('Add some examples before training!');
+      }
+      
+      // Creates a 2-layer fully connected model. By creating a separate model,
+      // rather than adding layers to the mobilenet model, we "freeze" the weights
+      // of the mobilenet model, and only train weights from the new model.
+      //const HiddenDenseUnits = 100
+      model = tf.sequential({
+        layers: [
+          // Flattens the input to a vector so we can use it in a dense layer. While
+          // technically a layer, this only performs a reshape (and has no training
+          // parameters).
+          tf.layers.flatten(
+              {inputShape: truncatedMobileNet.outputs[0].shape.slice(1)}),
+          // Layer 1.
+          tf.layers.dense({
+            units: 100,
+            activation: 'relu',
+            kernelInitializer: 'varianceScaling',
+            useBias: true
+          }),
+          // Layer 2. The number of units of the last layer should correspond
+          // to the number of classes we want to predict.
+          tf.layers.dense({
+            units: 3,
+            kernelInitializer: 'varianceScaling',
+            useBias: false,
+            activation: 'softmax'
+          })
+        ]
+      });
+      
+      // hyperparams
+      LR = 1e-4
+      BatchSizeFraction = 0.4
+      Epochs = 20
+  
+  
+      // Creates the optimizers which drives training of the model.
+      optimizer = tf.train.adam(LR);
+      // We use categoricalCrossentropy which is the loss function we use for
+      // categorical classification which measures the error between our predicted
+      // probability distribution over classes (probability that an input is of each
+      // class), versus the label (100% probability in the true class)>
+      model.compile({optimizer: optimizer, loss: 'categoricalCrossentropy'});
+    
+      // We parameterize batch size as a fraction of the entire dataset because the
+      // number of examples that are collected depends on how many examples the user
+      // collects. This allows us to have a flexible batch size.
+      batchSize =
+          Math.floor(controllerDataset.xs.shape[0] * BatchSizeFraction);
+      if (!(batchSize > 0)) {
+        throw new Error(
+            `Batch size is 0 or NaN. Please choose a non-zero fraction.`);
+      }
+    
+      // Train the model! Model.fit() will shuffle xs & ys so we don't have to.
+      model.fit(controllerDataset.xs, controllerDataset.ys, {
+        batchSize,
+        epochs: Epochs,
+        callbacks: {
+          onBatchEnd: async (batch, logs) => {
+            //ui.trainStatus('Loss: ' + logs.loss.toFixed(5));
+            console.log(logs.loss.toFixed(5));
+          }
+        }
+      });
+ */
