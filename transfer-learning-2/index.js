@@ -1,10 +1,56 @@
 // ----------------------------------------------------------------------------------------
-// ---------------------------[ Helpers start ]---------------------------------------------
+// ---------------------------[ Helpers start ]--------------------------------------------
 // ----------------------------------------------------------------------------------------
 
-// Function to make execution wait for given number
-// of milliseconds.
-// wait(ms)
+/**********************************[---UI Realted---]*************************************/
+
+/**
+ * Display / hide train dataset on click
+ */
+function showDiv() {
+  document.getElementById('train-dataset').style.display = "block";
+}
+function hideDiv() {
+  document.getElementById('train-dataset').style.display = "none";
+}
+
+
+/**
+ * Display training process
+ */
+function myconsole() {
+  if (truncatedMobileNet){
+    let text = `
+    Truncated model loaded \n`;
+    document.getElementById('console').innerText = text;
+
+    if (controllerDataset.xs != null){
+      text = text + `Data Added \n`;
+      document.getElementById('console').innerText = text;
+
+      if (trainStarted != null){
+        text = text + `Training started \n`;
+        document.getElementById('console').innerText = text;
+      }
+    }
+  }
+
+  if (1==2) {
+    // example
+    document.getElementById('console').innerText = `
+    prediction: ${result[0].className}\n
+    probability: ${result[0].probability}
+  `;
+  }
+}
+
+
+
+/** 
+* Function to make execution wait for given number
+* of milliseconds.
+* wait(ms)
+*/
 function wait(ms){
   var start = new Date().getTime();
   var end = start;
@@ -13,6 +59,7 @@ function wait(ms){
  }
 }
 
+/**********************************[---ML Realted---]*****************************************/
 /**
  * USAGE: `img = capture(i.toString())` where `i` is INT
  * Captures a frame from the webcam and normalizes it between -1 and 1.
@@ -186,13 +233,12 @@ async function addExampleHandler(label, imgId) {
       epochs: Epochs,
       callbacks: {
         onBatchEnd: async (batch, logs) => {
-          //ui.trainStatus('Loss: ' + logs.loss.toFixed(5));
-          //console.log(logs.loss.toFixed(5));
+          console.log(logs.loss.toFixed(5));
         }
       }
     });
 
-    return 0
+    return 1;
   }
   
 /**
@@ -222,15 +268,40 @@ async function predict(imgId){
   return classId;
 } 
 
+/**********************************[---Visualisations---]********************************/
+
+
+const lossLabelElement = document.getElementById('loss-label');
+const accuracyLabelElement = document.getElementById('accuracy-label');
+const lossValues = [[], []];
+
+function plotLoss(batch, loss, set) {
+  const series = set === 'train' ? 0 : 1;
+  lossValues[series].push({x: batch, y: loss});
+  const lossContainer = document.getElementById('loss-canvas');
+  tfvis.render.linechart(
+      lossContainer, {values: lossValues, series: ['train', 'validation']}, {
+        xLabel: 'Batch #',
+        yLabel: 'Loss',
+        width: 400,
+        height: 300,
+      });
+  lossLabelElement.innerText = `last loss: ${loss.toFixed(3)}`;
+}
+
 // ----------------------------------------------------------------------------------------
 // ---------------------------[ Helpers end ]----------------------------------------------
 // ----------------------------------------------------------------------------------------
 
-
+/**
+ * Main function
+ */
 async function app(){
     // load model
+    trainStarted = false
     truncatedMobileNet = await loadTruncatedMobileNet();
     console.log("truncated model loaded.")
+    myconsole();
     
     // add data into 
     console.log("adding data...")
@@ -252,15 +323,22 @@ async function app(){
           console.log("Loop incorrect")
         }
     }
-    console.log("data added!")
 
+    console.log("data added!")
+    myconsole();
     // should be false!
     console.log(controllerDataset.xs == null)
 
     // train
     console.log("Training started");
-    const nil = await train()
+    trainStarted = true
+    await train()
+    // `training completed!` will be displayed first and 
+    // then training will start :/
     console.log('traing completed!')
+    myconsole();
+    
+    
     // check what `warmup` is all about [X]
 
     // predict
@@ -275,4 +353,5 @@ async function app(){
     
 }
 
-app();
+
+//app();

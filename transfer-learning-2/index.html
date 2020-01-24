@@ -4,10 +4,28 @@
     <script src="https://unpkg.com/@tensorflow-models/mobilenet"></script>
   </head>
   <body>
+    <!-- train -->
+    <div id="train-model" style="margin-right:auto; margin-left: auto; width: 80%;">
+      <h1>Train Model</h1>
+      
+      <!-- start training -->
+      <input type="button" value="Start Training" onclick="app()" />
+      
+      <!-- display output -->
+      <div id="console" style="font-size: small; margin-left: 2%; margin-top: 2%;"> Click on start training button </div>
+    
+    </br></br></br>
+    </div>
+    
+    <!-- display / resize train images-->
+    <div id="display-hide-buttons" style="margin-right:auto; margin-left: auto; width: 80%;">
+      <input type="button" value="Show Dataset" onclick="showDiv()" />
+      <input type="button" value="x" onclick="hideDiv()" />
+    </div>
 
-    <div id="train-imgs" style="margin-right:auto; margin-left: auto; width: 80%;">
-      <H3> TRAIN IMAGES </H3> </br>
-
+    <!-- display/hide this div depeding on above button clicks-->
+    <div id="train-dataset" style="display:none; margin-right:auto; margin-left: auto; width: 80%;">
+      <H3> Dataset </H3>  
       <!-- note: width="224" height="224" nullx224x224x3 shape is input for mobilenet -->
       <p> Pizza </p> </br>
       <img id="11" crossorigin src="image/train/pizza/pizza1.jpeg" width="224" height="224"/>
