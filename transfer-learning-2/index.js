@@ -226,14 +226,20 @@ async function addExampleHandler(label, imgId) {
       throw new Error(
           `Batch size is 0 or NaN. Please choose a non-zero fraction.`);
     }
-  
+    
+    // We'll keep a buffer of loss and accuracy values over time.
+    let trainBatchCount = 0;
+
     // Train the model! Model.fit() will shuffle xs & ys so we don't have to.
     model.fit(controllerDataset.xs, controllerDataset.ys, {
       batchSize,
       epochs: Epochs,
       callbacks: {
         onBatchEnd: async (batch, logs) => {
-          console.log(logs.loss.toFixed(5));
+          //console.log('loss:' + logs.loss.toFixed(5));
+          trainBatchCount = trainBatchCount + 1
+          plotLoss(trainBatchCount, logs.loss, 'train');
+
         }
       }
     });
@@ -268,16 +274,19 @@ async function predict(imgId){
   return classId;
 } 
 
-/**********************************[---Visualisations---]********************************/
+/**********************************[---Visualisations---]***********************************/
 
 
 const lossLabelElement = document.getElementById('loss-label');
-const accuracyLabelElement = document.getElementById('accuracy-label');
-const lossValues = [[], []];
+//const accuracyLabelElement = document.getElementById('accuracy-label');
+const lossValues = [[], [{x: 0, y: 0}]]; // dummy validation value
 
 function plotLoss(batch, loss, set) {
   const series = set === 'train' ? 0 : 1;
   lossValues[series].push({x: batch, y: loss});
+  lossValues[1].push({x: 0, y: 0}); // dummy
+  console.log(lossValues)
+  
   const lossContainer = document.getElementById('loss-canvas');
   tfvis.render.linechart(
       lossContainer, {values: lossValues, series: ['train', 'validation']}, {
@@ -286,7 +295,9 @@ function plotLoss(batch, loss, set) {
         width: 400,
         height: 300,
       });
+  /*
   lossLabelElement.innerText = `last loss: ${loss.toFixed(3)}`;
+  */
 }
 
 // ----------------------------------------------------------------------------------------

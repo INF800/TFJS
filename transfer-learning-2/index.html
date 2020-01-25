@@ -2,6 +2,7 @@
   <head>
     <script src="https://unpkg.com/@tensorflow/tfjs"></script>
     <script src="https://unpkg.com/@tensorflow-models/mobilenet"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis"></script>
   </head>
   <body>
     <!-- train -->
@@ -13,6 +14,13 @@
       
       <!-- display output -->
       <div id="console" style="font-size: small; margin-left: 2%; margin-top: 2%;"> Click on start training button </div>
+      
+      <div id="loss-label"></div>
+      <div id="loss-canvas" class="vega-embed">
+        <canvas width="400" height="300" class="marks">
+        </canvas>
+        <div class="vega-bindings"></div>
+      </div>
     
     </br></br></br>
     </div>
