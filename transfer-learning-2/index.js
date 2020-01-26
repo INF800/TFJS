@@ -34,7 +34,8 @@ function myconsole() {
       }
     }
   }
-
+  
+  /*
   if (1==2) {
     // example
     document.getElementById('console').innerText = `
@@ -42,6 +43,7 @@ function myconsole() {
     probability: ${result[0].probability}
   `;
   }
+  */
 }
 
 
@@ -78,7 +80,7 @@ async function getImage(imgId) {
   }
 
 /**
- * A dataset for webcam controls which allows the user to add example Tensors
+ * A dataset for data controls which allows the user to add example Tensors
  * for particular labels. This object will concat them into two large xs and ys.
  */
 class ControllerDataset {
@@ -129,21 +131,6 @@ async function loadTruncatedMobileNet() {
     const layer = mobilenet.getLayer('conv_pw_13_relu');
     return tf.model({inputs: mobilenet.inputs, outputs: layer.output});
   }
-
-// When the UI buttons are pressed, read a frame from the webcam and associate
-// it with the class label given by the button. up, down, left, right are
-// labels 0, 1, 2, 3 respectively.
-/*
-ui.setExampleHandler(async label => {
-    let img = await getImage("1");
-  
-    controllerDataset.addExample(truncatedMobileNet.predict(img), label);
-  
-    // Draw the preview thumbnail.
-    ui.drawThumb(img, label);
-    img.dispose();
-  })
-*/
 
 
 
@@ -251,7 +238,7 @@ async function addExampleHandler(label, imgId) {
  * To predict class based on image tag id
  * Note:
  * Input must be 1x224x224x3
- * `imgID` is of type INT
+ * `imgID` is a string
  */
 async function predict(imgId){
   // load image using helper function
@@ -295,9 +282,8 @@ function plotLoss(batch, loss, set) {
         width: 400,
         height: 300,
       });
-  /*
   lossLabelElement.innerText = `last loss: ${loss.toFixed(3)}`;
-  */
+
 }
 
 // ----------------------------------------------------------------------------------------
@@ -349,20 +335,8 @@ async function app(){
     console.log('traing completed!')
     myconsole();
     
-    
-    // check what `warmup` is all about [X]
-
-    // predict
-    // -------
-    // TODO: Make it wait!
-    // wait(7000); // wait 7 secs
-    // until completely trained. 
-    // const predClass = await predict("9")
-    // console.log(predClass)
-    
-
-    
 }
 
 
 //app();
+// use predict() function defined in line 243 to predict image class
